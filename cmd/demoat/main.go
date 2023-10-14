@@ -13,11 +13,13 @@ import (
 var (
 	portpath string
 	cmd      string
+	timeout  int
 )
 
 func init() {
 	flag.StringVar(&portpath, "port", "/dev/tty_modem4g", "path to dev serial")
 	flag.StringVar(&cmd, "cmd", "AT", "path to dev serial")
+	flag.IntVar(&timeout, "timeout", 3, "read timeout in seconds")
 }
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	result, err := modemubox.CommandAT(cmd, "", p, 3*time.Second)
+	result, err := modemubox.CommandAT(cmd, "", p, (time.Duration(timeout))*time.Second)
 	if err != nil {
 		log.Fatalln(err)
 	}

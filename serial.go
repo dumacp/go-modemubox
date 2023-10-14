@@ -29,6 +29,7 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 			default:
 				line, err := reader.ReadString('\r')
 				if err != nil {
+					errc <- err
 					return
 				}
 

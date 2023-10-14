@@ -11,10 +11,24 @@ import (
 
 func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) ([]string, error) {
 
+	cmd = strings.ToUpper(cmd)
+	cmdLine := strings.Builder{}
+
+	if len(cmd) > 1 && !strings.HasPrefix(cmd, "AT") {
+		cmdLine.WriteString("AT" + cmd)
+	} else {
+		cmdLine.WriteString(cmd)
+	}
+	if len(arg) > 0 {
+		cmdLine.WriteString("=" + arg + "\r")
+	} else {
+		cmdLine.WriteString("\r")
+	}
+
 	// Leer líneas de respuesta hasta que llegue "OK" o "ERROR" o se alcance el timeout
 	ch := make(chan string)
 	errc := make(chan error)
-	go func() {
+	go func(cmd string) {
 		defer close(ch)
 
 		after := time.NewTimer(timeout)
@@ -38,7 +52,7 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 					errc <- err
 					return
 				}
-				if !withResponse {
+				if !withResponse && strings.HasPrefix(line, cmd) {
 					withResponse = true
 				}
 
@@ -52,23 +66,10 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 
 		}
 
-	}()
+	}(cmdLine.String())
 
 	// Enviar el comando al dispositivo
 
-	cmd = strings.ToUpper(cmd)
-	cmdLine := strings.Builder{}
-
-	if len(cmd) > 1 && !strings.HasPrefix(cmd, "AT") {
-		cmdLine.WriteString("AT" + cmd)
-	} else {
-		cmdLine.WriteString(cmd)
-	}
-	if len(arg) > 0 {
-		cmdLine.WriteString("=" + arg + "\r")
-	} else {
-		cmdLine.WriteString("\r")
-	}
 	_, err := port.Write([]byte(cmdLine.String()))
 	if err != nil {
 		return nil, err

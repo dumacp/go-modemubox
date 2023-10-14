@@ -46,7 +46,7 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 			default:
 				line, err := reader.ReadString('\r')
 				if err != nil {
-					if !withResponse && errors.Is(err, io.EOF) {
+					if withResponse && errors.Is(err, io.EOF) {
 						continue
 					}
 					errc <- err

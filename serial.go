@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) ([]string, error) {
+func CommandAT(port io.ReadWriteCloser, cmd, arg string, timeout time.Duration) ([]string, error) {
 
 	cmd = strings.ToUpper(cmd)
 	cmdLine := strings.Builder{}
@@ -59,7 +59,11 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 				ch <- strings.TrimSpace(line)
 
 				// Verificar si la línea contiene "OK" o "ERROR"
-				if strings.Contains(line, "OK") || strings.Contains(line, "ERROR") {
+				if strings.Contains(line, "OK") {
+					return
+				}
+				if strings.Contains(line, "ERROR") {
+					errc <- fmt.Errorf("error in response")
 					return
 				}
 			}

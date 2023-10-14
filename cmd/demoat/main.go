@@ -39,7 +39,7 @@ func main() {
 
 	result, err := modemubox.CommandAT(cmd, "", p, (time.Duration(timeout))*time.Second)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("response: %q, error: %s", result, err)
 	}
 
 	fmt.Println("respoonse ", result)

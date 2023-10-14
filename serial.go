@@ -2,6 +2,7 @@ package modemubox
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -20,6 +21,8 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 		defer after.Stop()
 
 		reader := bufio.NewReader(port)
+
+		withResponse := false
 		for {
 
 			select {
@@ -29,8 +32,14 @@ func CommandAT(cmd, arg string, port io.ReadWriteCloser, timeout time.Duration) 
 			default:
 				line, err := reader.ReadString('\r')
 				if err != nil {
+					if !withResponse && errors.Is(err, io.EOF) {
+						continue
+					}
 					errc <- err
 					return
+				}
+				if !withResponse {
+					withResponse = true
 				}
 
 				ch <- strings.TrimSpace(line)

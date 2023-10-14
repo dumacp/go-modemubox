@@ -1,0 +1,3 @@
+package modemubox
+
+func RadioAccessTechnologySelection()

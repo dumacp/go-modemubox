@@ -32,6 +32,13 @@ func PDPcontextActivate(port io.ReadWriteCloser, cid int, active bool) error {
 	return nil
 }
 
+func GetPDPcontextActivate(port io.ReadWriteCloser, cid int, active bool) ([]string, error) {
+	cmd := strings.Builder{}
+	cmd.WriteString("AT+CGACT?")
+
+	return sendcommandResponse(port, cmd.String(), 1*time.Second)
+}
+
 func PDPcontextDefinition(port io.ReadWriteCloser, cid int, pdptype PDPType, apn, ip string, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery int) error {
 
 	cmd := strings.Builder{}
@@ -49,6 +56,14 @@ func PDPcontextDefinition(port io.ReadWriteCloser, cid int, pdptype PDPType, apn
 	}
 
 	return nil
+}
+
+func GetPDPcontextDefinition(port io.ReadWriteCloser) ([]string, error) {
+
+	cmd := strings.Builder{}
+	cmd.WriteString("+CGDCONT?")
+
+	return sendcommandResponse(port, cmd.String(), 1*time.Second)
 }
 
 func PDPcontextDefinitionShort(port io.ReadWriteCloser, cid int, pdptype PDPType, apn string) error {

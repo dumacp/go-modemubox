@@ -12,7 +12,7 @@ import (
 
 func TailKmesg(ctx context.Context) (chan string, error) {
 
-	f, err := os.Open("/dev/kmesg")
+	f, err := os.Open("/dev/kmsg")
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dumacp/go-modemubox"
 	"github.com/tarm/serial"
 )
 
@@ -87,8 +89,29 @@ func run() error {
 	const MaxError = 3
 	countError := 4
 
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	chKmesg, err := modemubox.TailKmesg(ctx)
+	if err != nil {
+		fmt.Println("error tail kmesg: ", err)
+	}
+	defer close(chKmesg)
+
 	for {
 		select {
+		case v, ok := <-chKmesg:
+			if !ok {
+				return fmt.Errorf("error tail kmesg: %s", err)
+			}
+			if strings.Contains(v, "cdc_ether") {
+				fmt.Println("kmesg event: ", v)
+				if strings.Contains(v, "unregister") {
+					select {
+					case chPingTest <- struct{}{}:
+					default:
+					}
+				}
+			}
 		case <-tickPing.C:
 			select {
 			case chPingTest <- struct{}{}:

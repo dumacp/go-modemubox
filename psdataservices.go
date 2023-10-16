@@ -17,7 +17,7 @@ const (
 	IPV4V6 PDPType = "IPV4V6" //virtual <PDP_type> introduced to handle dual IP stack UE capability
 )
 
-func PDPcontextActivate(port io.ReadWriteCloser, cid int, active bool) error {
+func PDPcontextActivate(port io.ReadWriter, cid int, active bool) error {
 	cmd := strings.Builder{}
 	cmd.WriteString("AT+CGACT=")
 	cmd.WriteString(fmt.Sprintf("%d,%d", func() int {
@@ -32,14 +32,14 @@ func PDPcontextActivate(port io.ReadWriteCloser, cid int, active bool) error {
 	return nil
 }
 
-func GetPDPcontextActivate(port io.ReadWriteCloser, cid int, active bool) ([]string, error) {
+func GetPDPcontextActivates(port io.ReadWriter) ([]string, error) {
 	cmd := strings.Builder{}
 	cmd.WriteString("AT+CGACT?")
 
-	return sendcommandResponse(port, cmd.String(), 1*time.Second)
+	return sendcommandOneTypeResponse(port, cmd.String(), 1*time.Second)
 }
 
-func PDPcontextDefinition(port io.ReadWriteCloser, cid int, pdptype PDPType, apn, ip string, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery int) error {
+func PDPcontextDefinition(port io.ReadWriter, cid int, pdptype PDPType, apn, ip string, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery int) error {
 
 	cmd := strings.Builder{}
 	cmd.WriteString("+CGDCONT=")
@@ -58,15 +58,15 @@ func PDPcontextDefinition(port io.ReadWriteCloser, cid int, pdptype PDPType, apn
 	return nil
 }
 
-func GetPDPcontextDefinition(port io.ReadWriteCloser) ([]string, error) {
+func GetPDPcontextDefinition(port io.ReadWriter) ([]string, error) {
 
 	cmd := strings.Builder{}
 	cmd.WriteString("+CGDCONT?")
 
-	return sendcommandResponse(port, cmd.String(), 1*time.Second)
+	return sendcommandOneTypeResponse(port, cmd.String(), 1*time.Second)
 }
 
-func PDPcontextDefinitionShort(port io.ReadWriteCloser, cid int, pdptype PDPType, apn string) error {
+func PDPcontextDefinitionShort(port io.ReadWriter, cid int, pdptype PDPType, apn string) error {
 	return PDPcontextDefinition(port, cid, pdptype, apn, "", 0, 0, 0, 0, 0, 0)
 }
 
@@ -210,7 +210,7 @@ func ParseToPDPcontextParameters(input string) PDPcontextParameters {
 	return p
 }
 
-func PDPcontextReadDynamicParametersGetIP(port io.ReadWriteCloser) (int, string, error) {
+func PDPcontextReadDynamicParametersGetIP(port io.ReadWriter) (int, string, error) {
 	cmd := strings.Builder{}
 	cmd.WriteString("+CGCONTRDP")
 	res, err := CommandAT(port, cmd.String(), "", 3*time.Second)

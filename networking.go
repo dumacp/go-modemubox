@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func GettheUSBIPconfiguration(port io.ReadWriteCloser, cid int) (string, error) {
+func GettheUSBIPconfiguration(port io.ReadWriter, cid int) (string, error) {
 
 	cmd := strings.Builder{}
 	cmd.WriteString("+UIPADDR=")

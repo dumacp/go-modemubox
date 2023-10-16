@@ -3,6 +3,8 @@ package modemubox
 import (
 	"fmt"
 	"io"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -42,12 +44,47 @@ const (
 • 3: LTE
 **/
 
-func RadioAccessTechnologySelection(port io.ReadWriteCloser, selectAt AccessTecnology, preferedAt PreferedAccessTecnology) error {
+func RadioAccessTechnologySelection(port io.ReadWriter, selectAt AccessTecnology, preferedAt PreferedAccessTecnology) error {
 	cmd := strings.Builder{}
 	cmd.WriteString("AT+URAT=")
 	cmd.WriteString(fmt.Sprintf("%d,%d", selectAt, preferedAt))
+	if res, err := CommandAT(port, "+CFUN=4", "", 1*time.Second); err != nil {
+		return fmt.Errorf("error response: %q", res)
+	}
 	if res, err := CommandAT(port, cmd.String(), "", 5*time.Second); err != nil {
 		return fmt.Errorf("error response: %q", res)
 	}
+	if res, err := CommandAT(port, "+CFUN=1", "", 2*time.Second); err != nil {
+		return fmt.Errorf("error response: %q", res)
+	}
 	return nil
+}
+
+func GetRadioAccessTechnologySelection(port io.ReadWriter) (AccessTecnology, PreferedAccessTecnology, error) {
+
+	cmd := strings.Builder{}
+	cmd.WriteString("+URAT?")
+
+	res, err := sendcommandOneTypeResponse(port, cmd.String(), 1*time.Second)
+	if err != nil {
+		return 0, 0, fmt.Errorf("getRadioAccessTechnologySelection error: %w", err)
+	}
+
+	at, pt := parseaccessTechnology(res)
+
+	return AccessTecnology(at), PreferedAccessTecnology(pt), nil
+
+}
+
+func parseaccessTechnology(res []string) (int, int) {
+	re := regexp.MustCompile(`(\d+),(\d+)$`)
+	for _, s := range res {
+		match := re.FindStringSubmatch(s)
+		if len(match) > 2 {
+			key, _ := strconv.Atoi(match[1])
+			value, _ := strconv.Atoi(match[2])
+			return key, value
+		}
+	}
+	return 0, 0
 }

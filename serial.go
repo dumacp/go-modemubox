@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func CommandAT(port io.ReadWriteCloser, cmd, arg string, timeout time.Duration) ([]string, error) {
+func CommandAT(port io.ReadWriter, cmd, arg string, timeout time.Duration) ([]string, error) {
 
 	cmd = strings.ToUpper(cmd)
 	cmdLine := strings.Builder{}

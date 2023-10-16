@@ -51,6 +51,7 @@ func Test_extractDataWithPrefix(t *testing.T) {
 			name: "test1",
 			args: args{
 				data: []string{
+					"AT+CGDCONT?", "",
 					"+CGACT: 1,0",
 					"+CGACT: 2,0",
 					"+CGACT: 4,1",

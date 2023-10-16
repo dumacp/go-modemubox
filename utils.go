@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -14,22 +13,10 @@ func sendcommandOneTypeResponse(port io.ReadWriter, cmd string, timeout time.Dur
 		return nil, fmt.Errorf("error response: %q", res)
 	}
 
-	result := make([]string, 0)
-	for _, v := range res {
-		if strings.HasSuffix(v, cmd) {
-			continue
-		}
-		if len(v) == 2 && strings.Contains(v, "OK") {
-			continue
-		}
-		if len(v) == 0 {
-			continue
-		}
+	if len(res) > 0 {
+		return extractData(res), nil
 	}
-	if len(result) > 0 {
-		return extractData(result), nil
-	}
-	return result, nil
+	return res, nil
 }
 
 func extractData(data []string) []string {

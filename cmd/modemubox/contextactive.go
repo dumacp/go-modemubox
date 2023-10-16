@@ -60,6 +60,8 @@ func checkPdp(port io.ReadWriter, apn string) error {
 		return err
 	}
 
+	fmt.Printf("CGDCONT currents: %q\n", currents)
+
 	for _, v := range currents {
 		if strings.Contains(v, apn) {
 			return nil

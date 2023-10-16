@@ -12,13 +12,13 @@ import (
 
 var (
 	portpath string
-	apn      string
+	apns     string
 	testip   string
 )
 
 func init() {
 	flag.StringVar(&portpath, "port", "/dev/tty_modem4g", "path to dev serial")
-	flag.StringVar(&apn, "apn", "", "APN name")
+	flag.StringVar(&apns, "apn", "", "APN name")
 	flag.StringVar(&testip, "testip", "8.8.8.8", "test ip (icmp request)")
 }
 
@@ -114,7 +114,7 @@ func run() error {
 					return err
 				}
 				defer p.Close()
-				if ncid, err := VerifyContext(p); err != nil {
+				if ncid, err := VerifyContext(p, []string{"", apns}); err != nil {
 					return err
 				} else {
 					cid = ncid

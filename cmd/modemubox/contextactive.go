@@ -12,14 +12,10 @@ import (
 	"github.com/tarm/serial"
 )
 
-func VerifyContext(p *serial.Port) (int, error) {
+func VerifyContext(p *serial.Port, apns []string) (int, error) {
 
 	if _, err := modemubox.CommandAT(p, "AT", "", 1*time.Second); err != nil {
 		return 0, ErrorAT
-	}
-
-	if err := checkPdp(p, apn); err != nil {
-		return 0, fmt.Errorf("set APN error: %w", err)
 	}
 
 	at, pt, err := modemubox.GetRadioAccessTechnologySelection(p)
@@ -27,10 +23,23 @@ func VerifyContext(p *serial.Port) (int, error) {
 		return 0, fmt.Errorf("getRadioAccessTechnologySelection error: %w ", err)
 	}
 
-	if at != modemubox.GSM_UMTS_LTE_tri_mode || pt != modemubox.LTE {
-		modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_LTE_tri_mode, modemubox.LTE)
+	if at != modemubox.GSM_UMTS_dual_mode || pt != modemubox.GSM_GPRS_eGPRS {
+		modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_dual_mode, modemubox.GSM_GPRS_eGPRS)
 		time.Sleep(10 * time.Second)
 	}
+
+	currents, err := getPdp(p)
+	if err != nil {
+		return 0, fmt.Errorf("get currents APN error: %w", err)
+	}
+
+	cidApn := parseapn(currents)
+	// for k, v := range apns {
+
+	// 	if err := checkPdp(p, k+1, v, currents); err != nil {
+	// 		return 0, fmt.Errorf("set APN error: %w", err)
+	// 	}
+	// }
 
 	ctxs, err := contextActives(p)
 	if err != nil {
@@ -44,30 +53,66 @@ func VerifyContext(p *serial.Port) (int, error) {
 			break
 		}
 	}
+
 	if cid == 0 {
-		if err := modemubox.PDPcontextActivate(p, 1, true); err != nil {
-			return 0, fmt.Errorf("PDPcontextActivate error: %w", err)
+		var errx error
+		for k, v := range apns {
+			if err := checkPdp(p, k+1, v, cidApn); err != nil {
+				errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
+				continue
+			}
+			if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
+				errx = fmt.Errorf("PDPcontextActivate error: %w", err)
+				continue
+			}
 		}
-		cid = 1
+		if errx != nil {
+			return 0, errx
+		}
 	}
+
+	if apn, ok := cidApn[cid]; ok {
+		for _, v := range apns {
+			if len(v) == 0 {
+				if len(apn) == 0 {
+					return cid, nil
+				}
+				continue
+			}
+			if strings.Contains(apn, v) {
+				return cid, nil
+			}
+		}
+	}
+	fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
+
 	return cid, nil
 }
 
-func checkPdp(port io.ReadWriter, apn string) error {
+func getPdp(port io.ReadWriter) ([]string, error) {
 
 	currents, err := modemubox.GetPDPcontextDefinition(port)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	fmt.Printf("CGDCONT currents: %q\n", currents)
+	return currents, nil
+}
 
-	for _, v := range currents {
+func checkPdp(port io.ReadWriter, cid int, apn string, currentapns map[int]string) error {
+
+	for _, v := range currentapns {
+		if len(apn) == 0 {
+			if len(v) == 0 {
+				return nil
+			}
+			continue
+		}
 		if strings.Contains(v, apn) {
 			return nil
 		}
 	}
-	return modemubox.PDPcontextDefinitionShort(port, 1, modemubox.IP, apn)
+	return modemubox.PDPcontextDefinitionShort(port, cid, modemubox.IP, apn)
 }
 
 func contextActives(port io.ReadWriter) (map[int]int, error) {
@@ -88,6 +133,20 @@ func parsecontext(res []string) map[int]int {
 		if len(match) > 2 {
 			key, _ := strconv.Atoi(match[1])
 			value, _ := strconv.Atoi(match[2])
+			results[key] = value
+		}
+	}
+	return results
+}
+
+func parseapn(res []string) map[int]string {
+	re := regexp.MustCompile(`^(\d+),\"\w+\",\"([[:word:]\.-]*)\",`)
+	results := make(map[int]string, 0)
+	for _, s := range res {
+		match := re.FindStringSubmatch(s)
+		if len(match) > 2 {
+			key, _ := strconv.Atoi(match[1])
+			value := match[2]
 			results[key] = value
 		}
 	}

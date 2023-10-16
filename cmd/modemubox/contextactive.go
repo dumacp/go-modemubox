@@ -86,6 +86,23 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 	}
 	fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
 
+	var errx error
+	for k, v := range apns {
+		if err := checkPdp(p, k+1, v, cidApn); err != nil {
+			errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
+			continue
+		}
+		if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
+			errx = fmt.Errorf("PDPcontextActivate error: %w", err)
+			continue
+		}
+	}
+	if errx != nil {
+		return 0, errx
+	}
+
+	fmt.Printf("current set CGPCONT: %q\n", cidApn[cid])
+
 	return cid, nil
 }
 

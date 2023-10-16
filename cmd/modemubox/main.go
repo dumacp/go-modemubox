@@ -128,7 +128,7 @@ func run() error {
 				if errors.Is(err, ErrorAT) {
 					countError++
 					if countError > MaxError {
-						countError := 0
+						countError = 0
 						select {
 						case chGpioPower <- struct{}{}:
 						default:

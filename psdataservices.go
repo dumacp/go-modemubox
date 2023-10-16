@@ -42,19 +42,20 @@ func GetPDPcontextActivates(port io.ReadWriter) ([]string, error) {
 func PDPcontextDefinition(port io.ReadWriter, cid int, pdptype PDPType, apn, ip string, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery int) error {
 
 	cmd := strings.Builder{}
-	cmd.WriteString("+CGDCONT=")
-	cmd.WriteString(fmt.Sprintf("%d,%q,%q", cid, pdptype, apn))
+	cmd.WriteString("+CGDCONT")
+	args := strings.Builder{}
+	args.WriteString(fmt.Sprintf("%d,%q,%q", cid, pdptype, apn))
 	if (len(ip) <= 0) && d_comp == 0 && h_comp == 0 && ipv4Alloc == 0 && emer_ind == 0 && req_type == 0 && P_CSCF_discovery == 0 {
-		fmt.Println("PDPcontextDefinition SHORT: ", cmd.String())
-		if res, err := CommandAT(port, cmd.String(), "", 1*time.Second); err != nil {
+		fmt.Println("PDPcontextDefinition SHORT: ", cmd.String(), "=", args.String())
+		if res, err := CommandAT(port, cmd.String(), args.String(), 1*time.Second); err != nil {
 			return fmt.Errorf("error response: %q", res)
 		}
 		return nil
 	}
 
 	cmd.WriteString(fmt.Sprintf("%q,%d,%d,%d,%d,%d,%d", ip, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery))
-	fmt.Println("PDPcontextDefinition LONG: ", cmd.String())
-	if res, err := CommandAT(port, cmd.String(), "", 1*time.Second); err != nil {
+	fmt.Println("PDPcontextDefinition LONG: ", cmd.String(), "=", args.String())
+	if res, err := CommandAT(port, cmd.String(), args.String(), 1*time.Second); err != nil {
 		return fmt.Errorf("error response: %q", res)
 	}
 

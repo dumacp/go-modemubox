@@ -65,6 +65,8 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 				errx = fmt.Errorf("PDPcontextActivate error: %w", err)
 				continue
 			}
+			errx = nil
+			break
 		}
 		if errx != nil {
 			return 0, errx
@@ -96,6 +98,8 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 			errx = fmt.Errorf("PDPcontextActivate error: %w", err)
 			continue
 		}
+		errx = nil
+		break
 	}
 	if errx != nil {
 		return 0, errx

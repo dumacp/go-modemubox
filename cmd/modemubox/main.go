@@ -114,7 +114,7 @@ func run() error {
 					return err
 				}
 				defer p.Close()
-				if ncid, err := VerifyContext(p, []string{"", apns}); err != nil {
+				if ncid, err := VerifyContext(p, []string{apns, ""}); err != nil {
 					return err
 				} else {
 					cid = ncid

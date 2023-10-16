@@ -30,6 +30,7 @@ func extractData(data []string) []string {
 			results = append(results, value)
 		}
 	}
+	fmt.Println("extractData response: ", results)
 	return results
 }
 

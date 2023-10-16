@@ -97,5 +97,7 @@ break_for:
 		}
 	}
 
+	fmt.Println("commandAT response: ", lines)
+
 	return lines, nil
 }

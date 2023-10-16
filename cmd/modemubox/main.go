@@ -24,6 +24,7 @@ func init() {
 
 func main() {
 
+	flag.Parse()
 	if err := run(); err != nil {
 		log.Println(err)
 		if err := gpioReset(); err != nil {
@@ -33,8 +34,6 @@ func main() {
 }
 
 func run() error {
-
-	flag.Parse()
 
 	c := serial.Config{
 		Name:        portpath,
@@ -52,8 +51,11 @@ func run() error {
 	chPingTest := make(chan struct{}, 1)
 	chContextTest := make(chan struct{}, 1)
 	chGpioReset := make(chan struct{}, 1)
+	chGpioPower := make(chan struct{}, 1)
 
 	cid := 0
+	const MaxError = 3
+	countError := 0
 
 	for {
 		select {
@@ -124,9 +126,18 @@ func run() error {
 			}(); err != nil {
 				fmt.Println(err)
 				if errors.Is(err, ErrorAT) {
-					select {
-					case chGpioReset <- struct{}{}:
-					default:
+					countError++
+					if countError > MaxError {
+						countError := 0
+						select {
+						case chGpioPower <- struct{}{}:
+						default:
+						}
+					} else {
+						select {
+						case chGpioReset <- struct{}{}:
+						default:
+						}
 					}
 				}
 			} else {
@@ -138,6 +149,10 @@ func run() error {
 		case <-chGpioReset:
 			if err := gpioReset(); err != nil {
 				return fmt.Errorf("gpio reset error: %s", err)
+			}
+		case <-chGpioPower:
+			if err := gpioPower(); err != nil {
+				return fmt.Errorf("gpio power error: %s", err)
 			}
 		case <-afteInit.C:
 			select {

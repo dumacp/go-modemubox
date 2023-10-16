@@ -59,7 +59,7 @@ func gpioPower() error {
 		return err
 	}
 	time.Sleep(1 * time.Second)
-	if _, err := fReset.Write([]byte("1")); err != nil {
+	if _, err := fPower.Write([]byte("1")); err != nil {
 		return err
 	}
 	time.Sleep(20 * time.Second)

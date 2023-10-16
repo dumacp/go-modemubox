@@ -22,7 +22,7 @@ func IpGet(p io.ReadWriter, cid int) (string, string, error) {
 	}
 	fmt.Println(ipusb)
 
-	return "", "", nil
+	return ip, ipusb, nil
 }
 
 func IPSet(ip, ipusb, ifusb string) error {

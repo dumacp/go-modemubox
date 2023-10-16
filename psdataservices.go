@@ -49,6 +49,7 @@ func PDPcontextDefinition(port io.ReadWriter, cid int, pdptype PDPType, apn, ip 
 		if res, err := CommandAT(port, cmd.String(), "", 1*time.Second); err != nil {
 			return fmt.Errorf("error response: %q", res)
 		}
+		return nil
 	}
 
 	cmd.WriteString(fmt.Sprintf("%q,%d,%d,%d,%d,%d,%d", ip, d_comp, h_comp, ipv4Alloc, emer_ind, req_type, P_CSCF_discovery))

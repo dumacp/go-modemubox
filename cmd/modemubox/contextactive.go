@@ -75,6 +75,7 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 			continue
 		}
 		cid = k + 1
+		cidApn[cid] = v
 		errx = nil
 		break
 	}

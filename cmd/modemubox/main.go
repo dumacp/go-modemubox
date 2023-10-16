@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -154,8 +155,10 @@ func run() error {
 				}
 				return nil
 			}(); err != nil {
+				var patErr *os.PathError
 				fmt.Println(err)
-				if errors.Is(err, ErrorAT) {
+				if errors.Is(err, ErrorAT) ||
+					errors.As(err, &patErr) {
 					countError++
 					if countError > MaxError {
 						countError = 0

@@ -141,7 +141,7 @@ func run() error {
 			}
 		case <-afteInit.C:
 			select {
-			case chPingTest <- struct{}{}:
+			case chContextTest <- struct{}{}:
 			default:
 			}
 		}

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/tarm/serial"
@@ -12,19 +13,47 @@ import (
 
 var (
 	portpath string
-	apns     string
+	apns     StringSlice
 	testip   string
 )
 
+type StringSlice []string
+
+func (s *StringSlice) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *StringSlice) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
+func (s *StringSlice) Value() []string {
+	sl := make([]string, 0)
+	for _, v := range *s {
+		if len(v) == 0 {
+			continue
+		}
+		sl = append(sl, v)
+	}
+	sl = append(sl, "")
+	return sl
+}
+
 func init() {
 	flag.StringVar(&portpath, "port", "/dev/tty_modem4g", "path to dev serial")
-	flag.StringVar(&apns, "apn", "", "APN name ()")
+	flag.Var(&apns, "apn", "APN name")
 	flag.StringVar(&testip, "testip", "8.8.8.8", "test ip (icmp request)")
 }
 
 func main() {
 
 	flag.Parse()
+
+	for i, item := range apns {
+		fmt.Printf("apn %d: %s\n", i+1, item)
+	}
+
 	if err := run(); err != nil {
 		log.Println(err)
 		if err := gpioReset(); err != nil {
@@ -55,7 +84,7 @@ func run() error {
 
 	cid := 0
 	const MaxError = 3
-	countError := 0
+	countError := 4
 
 	for {
 		select {
@@ -116,7 +145,8 @@ func run() error {
 					return err
 				}
 				defer p.Close()
-				if ncid, err := VerifyContext(p, []string{apns, ""}); err != nil {
+
+				if ncid, err := VerifyContext(p, apns.Value()); err != nil {
 					return err
 				} else {
 					cid = ncid

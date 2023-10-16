@@ -86,8 +86,8 @@ func run() error {
 	chGpioPower := make(chan struct{}, 1)
 
 	cid := 0
-	const MaxError = 3
-	countError := 4
+	const MaxError = 4
+	countError := 5
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -183,13 +183,20 @@ func run() error {
 				if errors.Is(err, ErrorAT) ||
 					errors.As(err, &patErr) {
 					countError++
-					if countError > MaxError {
+					if countError <= 1 {
+						time.Sleep(1 * time.Second)
+						select {
+						case chPingTest <- struct{}{}:
+						default:
+						}
+					} else if countError > MaxError {
 						countError = 0
 						select {
 						case chGpioPower <- struct{}{}:
 						default:
 						}
 					} else {
+						countError = 0
 						select {
 						case chGpioReset <- struct{}{}:
 						default:
@@ -203,15 +210,15 @@ func run() error {
 				}
 			}
 		case <-chGpioReset:
+			fmt.Println("gpio reset")
 			if err := gpioReset(); err != nil {
 				return fmt.Errorf("gpio reset error: %s", err)
 			}
-			fmt.Println("gpio reset")
 		case <-chGpioPower:
+			fmt.Println("gpio power")
 			if err := gpioPower(); err != nil {
 				return fmt.Errorf("gpio power error: %s", err)
 			}
-			fmt.Println("gpio power")
 		case <-afteInit.C:
 			select {
 			case chContextTest <- struct{}{}:

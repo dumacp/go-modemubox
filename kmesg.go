@@ -22,7 +22,7 @@ func TailKmesg(ctx context.Context) (chan string, error) {
 		return nil, err
 	}
 
-	watcher := time.NewTicker(1 * time.Second)
+	watcher := time.NewTicker(10 * time.Millisecond)
 
 	reader := bufio.NewReader(f)
 
@@ -38,12 +38,13 @@ func TailKmesg(ctx context.Context) (chan string, error) {
 				fmt.Println("close kmesg read")
 				return
 			case <-watcher.C:
+
 				line, err := reader.ReadString('\n')
 				if err != nil {
 					fmt.Printf("error reading line: %s", err)
 					return
 				}
-				fmt.Println("line form kmesg ", line) // process the line
+				// fmt.Println("line form kmesg ", line) // process the line
 				select {
 				case <-ctx.Done():
 				case ch <- line:

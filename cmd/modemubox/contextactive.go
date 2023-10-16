@@ -84,6 +84,8 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 	}
 	// }
 
+	defer fmt.Printf("current set CGPCONT: %q\n", cidApn[cid])
+
 	if apn, ok := cidApn[cid]; ok {
 		for _, v := range apns {
 			if len(v) == 0 {
@@ -115,8 +117,6 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 	// if errx != nil {
 	// 	return 0, errx
 	// }
-
-	fmt.Printf("current set CGPCONT: %q\n", cidApn[cid])
 
 	return cid, nil
 }

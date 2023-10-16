@@ -18,7 +18,7 @@ var (
 
 func init() {
 	flag.StringVar(&portpath, "port", "/dev/tty_modem4g", "path to dev serial")
-	flag.StringVar(&apns, "apn", "", "APN name")
+	flag.StringVar(&apns, "apn", "", "APN name ()")
 	flag.StringVar(&testip, "testip", "8.8.8.8", "test ip (icmp request)")
 }
 
@@ -150,10 +150,12 @@ func run() error {
 			if err := gpioReset(); err != nil {
 				return fmt.Errorf("gpio reset error: %s", err)
 			}
+			fmt.Println("gpio reset")
 		case <-chGpioPower:
 			if err := gpioPower(); err != nil {
 				return fmt.Errorf("gpio power error: %s", err)
 			}
+			fmt.Println("gpio power")
 		case <-afteInit.C:
 			select {
 			case chContextTest <- struct{}{}:

@@ -184,7 +184,7 @@ func run() error {
 					errors.As(err, &patErr) {
 					countError++
 					if countError <= 1 {
-						time.Sleep(1 * time.Second)
+						time.Sleep(3 * time.Second)
 						select {
 						case chPingTest <- struct{}{}:
 						default:

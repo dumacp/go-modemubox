@@ -25,7 +25,7 @@ func gpioReset() error {
 	if _, err := fReset.Write([]byte("0")); err != nil {
 		return err
 	}
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	return nil
 }
@@ -62,7 +62,7 @@ func gpioPower() error {
 	if _, err := fPower.Write([]byte("1")); err != nil {
 		return err
 	}
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	return nil
 }

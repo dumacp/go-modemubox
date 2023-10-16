@@ -51,7 +51,7 @@ func TailKmesg(ctx context.Context) (chan string, error) {
 						fmt.Printf("error reading line: %s", err)
 						return
 					}
-					fmt.Print(line) // process the line
+					fmt.Println("line form kmesg ", line) // process the line
 					select {
 					case <-ctx.Done():
 					case ch <- line:

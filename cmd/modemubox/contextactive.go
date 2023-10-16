@@ -54,24 +54,34 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 		}
 	}
 
-	if cid == 0 {
-		var errx error
-		for k, v := range apns {
-			if err := checkPdp(p, k+1, v, cidApn); err != nil {
-				errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
-				continue
-			}
-			if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
-				errx = fmt.Errorf("PDPcontextActivate error: %w", err)
-				continue
-			}
-			errx = nil
-			break
-		}
-		if errx != nil {
-			return 0, errx
+	currentApn := cidApn[cid]
+	fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
+
+	for _, v := range apns {
+		if len(v) > 0 && strings.Contains(currentApn, v) {
+			return cid, nil
 		}
 	}
+
+	// if cid == 0 {
+	var errx error
+	for k, v := range apns {
+		if err := checkPdp(p, k+1, v, cidApn); err != nil {
+			errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
+			continue
+		}
+		if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
+			errx = fmt.Errorf("PDPcontextActivate error: %w", err)
+			continue
+		}
+		cid = k + 1
+		errx = nil
+		break
+	}
+	if errx != nil {
+		return 0, errx
+	}
+	// }
 
 	if apn, ok := cidApn[cid]; ok {
 		for _, v := range apns {
@@ -86,24 +96,24 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 			}
 		}
 	}
-	fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
+	// fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
 
-	var errx error
-	for k, v := range apns {
-		if err := checkPdp(p, k+1, v, cidApn); err != nil {
-			errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
-			continue
-		}
-		if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
-			errx = fmt.Errorf("PDPcontextActivate error: %w", err)
-			continue
-		}
-		errx = nil
-		break
-	}
-	if errx != nil {
-		return 0, errx
-	}
+	// var errx error
+	// for k, v := range apns {
+	// 	if err := checkPdp(p, k+1, v, cidApn); err != nil {
+	// 		errx = fmt.Errorf("PDPcontextDefinition error: %w", err)
+	// 		continue
+	// 	}
+	// 	if err := modemubox.PDPcontextActivate(p, k+1, true); err != nil {
+	// 		errx = fmt.Errorf("PDPcontextActivate error: %w", err)
+	// 		continue
+	// 	}
+	// 	errx = nil
+	// 	break
+	// }
+	// if errx != nil {
+	// 	return 0, errx
+	// }
 
 	fmt.Printf("current set CGPCONT: %q\n", cidApn[cid])
 

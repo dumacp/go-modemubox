@@ -21,7 +21,7 @@ func gpioReset() error {
 	if _, err := fReset.Write([]byte("1")); err != nil {
 		return err
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(300 * time.Millisecond)
 	if _, err := fReset.Write([]byte("0")); err != nil {
 		return err
 	}

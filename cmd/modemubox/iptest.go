@@ -27,8 +27,9 @@ func ping(ipstest []string, count int, wait, waittime time.Duration) error {
 			fmt.Println("pint test to ", iptest, "is OK")
 			return nil
 		}
+		fmt.Printf("ping test to %q, error: %s\n", iptest, err)
 	}
 
-	return fmt.Errorf("ping cmd error, %q, %w", out, err)
+	return fmt.Errorf("ping test error: %q, %w", out, err)
 
 }

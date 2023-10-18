@@ -20,7 +20,7 @@ func ping(ipstest []string, count int, wait, waittime time.Duration) error {
 
 	var out []byte
 	var err error
-	for iptest := range ipstest {
+	for _, iptest := range ipstest {
 		pingcmd := fmt.Sprintf("ping -c %d, -i %d -W %d %s", count, waitseconds, waittimeseconds, iptest)
 		out, err = exec.Command("/bin/sh", "-c", pingcmd).Output()
 		if err == nil {

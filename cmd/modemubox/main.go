@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	portpath string
-	apns     StringSlice
-	testip   string
+	portpath   string
+	apns       StringSlice
+	testip     string
+	iptestenvs []string
 )
 
 type StringSlice []string
@@ -55,6 +56,26 @@ func main() {
 
 	for i, item := range apns {
 		fmt.Printf("apn %d: %s\n", i+1, item)
+	}
+
+	apnenv, _ := getAPN()
+	apnenvs := strings.Split(apnenv, ",")
+	if len(apnenvs) > 0 && len(apnenvs[0]) > 0 {
+		apns = apnenvs
+	}
+
+	for i, item := range apns {
+		fmt.Printf("apn from Environment %d: %s\n", i+1, item)
+	}
+
+	iptestenv, _ := getTestIP()
+	iptestenvs = strings.Split(iptestenv, ",")
+	if len(iptestenvs) <= 0 || len(iptestenvs[0]) <= 0 {
+		iptestenvs = []string{testip}
+	}
+
+	for i, item := range iptestenvs {
+		fmt.Printf("iptest from Environment %d: %s\n", i+1, item)
 	}
 
 	if err := run(); err != nil {
@@ -119,7 +140,7 @@ func run() error {
 			}
 		case <-chPingTest:
 			if err := func() error {
-				if err := ping(testip, 3, 1, 3); err != nil {
+				if err := ping(iptestenvs, 3, 1, 3); err != nil {
 					return fmt.Errorf("error ping: %s", err)
 				}
 				return nil

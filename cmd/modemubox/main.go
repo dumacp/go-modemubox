@@ -107,8 +107,9 @@ func run() error {
 	chGpioPower := make(chan struct{}, 1)
 
 	cid := 0
-	const MaxError = 4
-	countError := 5
+	const MaxError = 10
+	countError := 0
+	lastReset := time.Now().Add(-30 * time.Second)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -119,6 +120,10 @@ func run() error {
 	defer close(chKmesg)
 
 	for {
+		if time.Since(lastReset) < 30*time.Second {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 		select {
 		case v, ok := <-chKmesg:
 			if !ok {
@@ -164,7 +169,7 @@ func run() error {
 
 				ip, ipusb, err := IpGet(p, cid)
 				if err != nil {
-					fmt.Printf("error IPGet: %s\n", err)
+					return err
 				}
 				fmt.Printf("ip: %q, ipusb: %q\n", ip, ipusb)
 				if err := IPSet(ip, ipusb, "usb0"); err != nil {
@@ -204,38 +209,50 @@ func run() error {
 				if errors.Is(err, ErrorAT) ||
 					errors.As(err, &patErr) {
 					countError++
-					if countError <= 1 {
+					/** if countError <= MaxError/2 {
 						time.Sleep(3 * time.Second)
 						select {
 						case chPingTest <- struct{}{}:
 						default:
 						}
-					} else if countError > MaxError {
-						countError = 0
+					} else /**/if countError > MaxError {
+						time.Sleep(3 * time.Second)
 						select {
 						case chGpioPower <- struct{}{}:
+							countError = 0
 						default:
 						}
 					} else {
-						countError = 0
+						// countError = 0
+						time.Sleep(3 * time.Second)
 						select {
-						case chGpioReset <- struct{}{}:
+						// case chGpioReset <- struct{}{}:
+						case chPingTest <- struct{}{}:
 						default:
 						}
 					}
 				}
 			} else {
+				countError = 0
 				select {
 				case chPingTest <- struct{}{}:
 				default:
 				}
 			}
 		case <-chGpioReset:
+			if time.Since(lastReset) < 60*time.Second {
+				break
+			}
+			lastReset = time.Now()
 			fmt.Println("gpio reset")
 			if err := gpioReset(); err != nil {
 				return fmt.Errorf("gpio reset error: %s", err)
 			}
 		case <-chGpioPower:
+			if time.Since(lastReset) < 120*time.Second {
+				break
+			}
+			lastReset = time.Now()
 			fmt.Println("gpio power")
 			if err := gpioPower(); err != nil {
 				return fmt.Errorf("gpio power error: %s", err)

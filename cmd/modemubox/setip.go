@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"time"
 
 	"github.com/dumacp/go-modemubox"
 )
 
 func IpGet(p io.ReadWriter, cid int) (string, string, error) {
+	if _, err := modemubox.CommandAT(p, "AT", "", 1*time.Second); err != nil {
+		return "", "", ErrorAT
+	}
 	ncid, ip, err := modemubox.PDPcontextReadDynamicParametersGetIP(p)
 	if err != nil {
 		return "", "", err
@@ -28,7 +32,7 @@ func IpGet(p io.ReadWriter, cid int) (string, string, error) {
 func IPSet(ip, ipusb, ifusb string) error {
 
 	usbdowncmd := fmt.Sprintf("ip link set dev %s down", ifusb)
-	testcmd := fmt.Sprintf("ip ad ls dev %s | grep %s | grep %s", ip, ipusb, ifusb)
+	testcmd := fmt.Sprintf("ip ad ls dev %s | grep %s | grep %s", ifusb, ip, ipusb)
 
 	usbupcmd := fmt.Sprintf(" ip link set dev %s up", ifusb)
 	ipadcmd := fmt.Sprintf("ifconfig usb0:0 %s netmask 255.255.255.255 pointopoint %s up ", ip, ipusb)

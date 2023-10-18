@@ -23,8 +23,8 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 		return 0, fmt.Errorf("getRadioAccessTechnologySelection error: %w ", err)
 	}
 
-	if at != modemubox.GSM_UMTS_LTE_tri_mode || pt != modemubox.LTE {
-		modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_LTE_tri_mode, modemubox.LTE)
+	if at != modemubox.GSM_UMTS_dual_mode || pt != modemubox.UTRAN {
+		modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_dual_mode, modemubox.UTRAN)
 		time.Sleep(10 * time.Second)
 	}
 

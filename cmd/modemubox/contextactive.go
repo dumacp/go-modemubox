@@ -57,6 +57,13 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 	currentApn := cidApn[cid]
 	fmt.Printf("current CGPCONT: %q\n", cidApn[cid])
 
+	if len(apns) == 0 && cid > 0 {
+		return cid, nil
+	}
+	if len(apns) == 1 && len(apns[0]) == 0 && cid > 0 {
+		return cid, nil
+	}
+
 	for _, v := range apns {
 		if len(v) > 0 && strings.Contains(currentApn, v) {
 			return cid, nil

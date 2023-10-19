@@ -18,6 +18,8 @@ var (
 	portpath   string
 	apns       StringSlice
 	testip     string
+	atecn      int
+	ptecn      int
 	iptestenvs []string
 )
 
@@ -48,6 +50,8 @@ func init() {
 	flag.StringVar(&portpath, "port", "/dev/tty_modem4g", "path to dev serial")
 	flag.Var(&apns, "apn", "APN name")
 	flag.StringVar(&testip, "testip", "8.8.8.8", "test ip (icmp request)")
+	flag.IntVar(&atecn, "AT", int(modemubox.GSM_UMTS_LTE_tri_mode), fmt.Sprintf("AccessTecnologyValues (values: %s)", modemubox.AccessTecnologyValues()))
+	flag.IntVar(&ptecn, "PT", int(modemubox.LTE), fmt.Sprintf("PreferedAccessTecnologyValues (values: %s)", modemubox.PreferedAccessTecnologyValues()))
 }
 
 func main() {
@@ -78,21 +82,71 @@ func main() {
 		fmt.Printf("iptest from Environment %d: %s\n", i+1, item)
 	}
 
-	if err := run(); err != nil {
-		log.Println(err)
-		if err := gpioReset(); err != nil {
-			log.Println("error reset \"gsm-reset\": ", err)
-		}
-	}
-}
-
-func run() error {
-
 	c := serial.Config{
 		Name:        portpath,
 		Baud:        115200,
 		ReadTimeout: 1 * time.Second,
 	}
+
+	if err := initial(c); err != nil {
+		log.Println(err)
+		time.Sleep(1 * time.Second)
+
+		// if err := gpioPower(); err != nil {
+		// 	log.Println("error reset \"gsm-reset\": ", err)
+		// }
+		return
+	}
+
+	if err := run(c); err != nil {
+		log.Println(err)
+		if err := gpioPower(); err != nil {
+			log.Println("error reset \"gsm-reset\": ", err)
+		}
+	}
+}
+
+func initial(c serial.Config) error {
+
+	p, err := serial.OpenPort(&c)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+
+	mode, err := modemubox.GetBootModeConfiguration(p)
+	if err != nil {
+		return err
+	}
+
+	at, pt, err := modemubox.GetRadioAccessTechnologySelection(p)
+	if err != nil {
+		return err
+	}
+
+	if mode != 2 || at != modemubox.AccessTecnology(atecn) || pt != modemubox.PreferedAccessTecnology(ptecn) {
+		if err := modemubox.OpenModemConf(p, true); err != nil {
+			return err
+		}
+		defer modemubox.CloseModemConf(p, true)
+	}
+
+	if mode != 2 {
+		if err := modemubox.BootModeConfiguration(p, 2); err != nil {
+			return err
+		}
+	}
+
+	if at != modemubox.AccessTecnology(atecn) || pt != modemubox.PreferedAccessTecnology(ptecn) {
+		if err := modemubox.RadioAccessTechnologySelection(p, modemubox.AccessTecnology(atecn), modemubox.PreferedAccessTecnology(ptecn)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func run(c serial.Config) error {
 
 	tickPing := time.NewTicker(30 * time.Second)
 	defer tickPing.Stop()

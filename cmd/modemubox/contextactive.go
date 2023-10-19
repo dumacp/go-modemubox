@@ -18,15 +18,15 @@ func VerifyContext(p *serial.Port, apns []string) (int, error) {
 		return 0, ErrorAT
 	}
 
-	at, pt, err := modemubox.GetRadioAccessTechnologySelection(p)
-	if err != nil {
-		return 0, fmt.Errorf("getRadioAccessTechnologySelection error: %w ", err)
-	}
+	// at, pt, err := modemubox.GetRadioAccessTechnologySelection(p)
+	// if err != nil {
+	// 	return 0, fmt.Errorf("getRadioAccessTechnologySelection error: %w ", err)
+	// }
 
-	if at != modemubox.GSM_UMTS_dual_mode || pt != modemubox.UTRAN {
-		modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_dual_mode, modemubox.UTRAN)
-		time.Sleep(10 * time.Second)
-	}
+	// if at != modemubox.GSM_UMTS_dual_mode || pt != modemubox.UTRAN {
+	// 	modemubox.RadioAccessTechnologySelection(p, modemubox.GSM_UMTS_dual_mode, modemubox.UTRAN)
+	// 	time.Sleep(10 * time.Second)
+	// }
 
 	currents, err := getPdp(p)
 	if err != nil {

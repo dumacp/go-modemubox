@@ -19,6 +19,18 @@ func sendcommandOneTypeResponse(port io.ReadWriter, cmd string, timeout time.Dur
 	return res, nil
 }
 
+func sendcommandOneTypeResponseWithPrefix(port io.ReadWriter, cmd string, timeout time.Duration) (map[string][]string, error) {
+	res, err := CommandAT(port, cmd, "", timeout)
+	if err != nil {
+		return nil, fmt.Errorf("error response: %q", res)
+	}
+
+	if len(res) > 0 {
+		return extractDataWithPrefix(res), nil
+	}
+	return nil, nil
+}
+
 func extractData(data []string) []string {
 	re := regexp.MustCompile(`^\+(\w+): (.+)$`)
 
@@ -47,4 +59,14 @@ func extractDataWithPrefix(data []string) map[string][]string {
 		}
 	}
 	return results
+}
+
+func extractParseData(re *regexp.Regexp, s string) []string {
+
+	match := re.FindStringSubmatch(s)
+	if len(match) > 1 {
+		return match[1:]
+	}
+
+	return nil
 }

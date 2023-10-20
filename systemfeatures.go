@@ -31,7 +31,7 @@ func InterfaceProfileConf(port io.ReadWriter, upc UsbProductCategory, fun UsbFun
 	cmd := strings.Builder{}
 	cmd.WriteString("+UUSBCONF=")
 	cmd.WriteString(fmt.Sprintf("%d", upc))
-	cmd.WriteString(string(fun))
+	cmd.WriteString(fmt.Sprintf(",%q", fun))
 
 	res, err := CommandAT(port, cmd.String(), "", 3*time.Second)
 	if err != nil {
@@ -47,25 +47,32 @@ func GetInterfaceProfileConf(port io.ReadWriter) (UsbProductCategory, UsbFunctio
 	cmd := strings.Builder{}
 	cmd.WriteString("+UUSBCONF?")
 
-	res, err := sendcommandOneTypeResponse(port, cmd.String(), 1*time.Second)
+	res, err := sendcommandOneTypeResponseWithPrefix(port, cmd.String(), 1*time.Second)
 	if err != nil {
-		return 0, "", fmt.Errorf("GetInterfaceProfileConf error: %w", err)
+		return 0, "", fmt.Errorf("getRadioAccessTechnologySelection error: %w", err)
 	}
 
-	if len(res) < 2 {
-		return 0, "", fmt.Errorf("wring response: %s", res)
+	for k, v := range res {
+		if strings.HasPrefix(k, "UUSBCONF") {
+			if len(v) <= 0 {
+				return 0, "", fmt.Errorf("wrong response: %s", res)
+			}
+			re := regexp.MustCompile(`(\d+),\"(\w+)\",.*$`)
+			result := extractParseData(re, v[0])
+			if len(result) < 2 {
+				return 0, "", fmt.Errorf("wrong response: %q, %q", res, result)
+			}
+
+			upc, err := strconv.Atoi(result[0])
+			if err != nil {
+				return 0, "", fmt.Errorf("wrong response: %q, %q", res, result)
+			}
+
+			return UsbProductCategory(upc), UsbFunction(result[1]), nil
+		}
 	}
 
-	re := regexp.MustCompile(`(\d+),(\w+)$`)
-	result := extractParseData(re, res[1])
-
-	if len(result) < 2 {
-		return 0, "", fmt.Errorf("invalida data response %s", result)
-	}
-
-	upc, _ := strconv.Atoi(result[0])
-
-	return UsbProductCategory(upc), UsbFunction(result[1]), nil
+	return 0, "", fmt.Errorf("wrong response: %s", res)
 
 }
 

@@ -92,9 +92,9 @@ func main() {
 		log.Println(err)
 		time.Sleep(1 * time.Second)
 
-		// if err := gpioPower(); err != nil {
-		// 	log.Println("error reset \"gsm-reset\": ", err)
-		// }
+		if err := gpioPower(); err != nil {
+			log.Println("error reset \"gsm-reset\": ", err)
+		}
 		return
 	}
 
@@ -124,7 +124,14 @@ func initial(c serial.Config) error {
 		return err
 	}
 
-	if mode != 2 || at != modemubox.AccessTecnology(atecn) || pt != modemubox.PreferedAccessTecnology(ptecn) {
+	upc, uf, err := modemubox.GetInterfaceProfileConf(p)
+	if err != nil {
+		return err
+	}
+
+	if mode != 2 ||
+		at != modemubox.AccessTecnology(atecn) || pt != modemubox.PreferedAccessTecnology(ptecn) ||
+		upc != modemubox.LowMedium_Throughput || uf != modemubox.ECM {
 		if err := modemubox.OpenModemConf(p, true); err != nil {
 			return err
 		}
@@ -139,6 +146,12 @@ func initial(c serial.Config) error {
 
 	if at != modemubox.AccessTecnology(atecn) || pt != modemubox.PreferedAccessTecnology(ptecn) {
 		if err := modemubox.RadioAccessTechnologySelection(p, modemubox.AccessTecnology(atecn), modemubox.PreferedAccessTecnology(ptecn)); err != nil {
+			return err
+		}
+	}
+
+	if upc != modemubox.LowMedium_Throughput || uf != modemubox.ECM {
+		if err := modemubox.InterfaceProfileConf(p, modemubox.LowMedium_Throughput, modemubox.ECM); err != nil {
 			return err
 		}
 	}
@@ -163,7 +176,10 @@ func run(c serial.Config) error {
 	cid := 0
 	const MaxError = 10
 	countError := 0
+	const MaxPingError = 30
+	countPingError := 0
 	lastReset := time.Now().Add(-30 * time.Second)
+	lastErrATcommand := time.Now().Add(-300 * time.Second)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -173,6 +189,8 @@ func run(c serial.Config) error {
 	}
 	defer close(chKmesg)
 
+	ip := ""
+	ipusb := ""
 	for {
 		if time.Since(lastReset) < 30*time.Second {
 			time.Sleep(1 * time.Second)
@@ -200,17 +218,43 @@ func run(c serial.Config) error {
 		case <-chPingTest:
 			if err := func() error {
 				if err := ping(iptestenvs, 3, 1, 3); err != nil {
-					return fmt.Errorf("error ping: %s", err)
+					if len(ip) > 0 && len(ipusb) > 0 {
+						fmt.Printf("ip: %q, ipusb: %q\n", ip, ipusb)
+						if err := IPSet(ip, ipusb, "usb0"); err != nil {
+							return fmt.Errorf("error IPSet: %s", err)
+						}
+						if err := ping(iptestenvs, 3, 1, 3); err != nil {
+							return fmt.Errorf("error ping: %s", err)
+						}
+					} else {
+						return err
+					}
 				}
 				return nil
 			}(); err != nil {
 				fmt.Println(err)
-				select {
-				case chIPSet <- struct{}{}:
-				default:
+				countPingError++
+				if countPingError > MaxPingError {
+					select {
+					case chGpioPower <- struct{}{}:
+						countPingError = 0
+					default:
+					}
+				} else {
+					select {
+					case chIPSet <- struct{}{}:
+					default:
+					}
 				}
+			} else {
+				countPingError = 0
 			}
 		case <-chIPSet:
+			// fmt.Println(1)
+			if time.Since(lastErrATcommand) < 60*time.Second {
+				break
+			}
+			// fmt.Println(1)
 			if err := func() error {
 				if cid == 0 {
 					return fmt.Errorf("cid is 0 (ZERO)")
@@ -221,7 +265,8 @@ func run(c serial.Config) error {
 				}
 				defer p.Close()
 
-				ip, ipusb, err := IpGet(p, cid)
+				// var err error
+				ip, ipusb, err = IpGet(p, cid)
 				if err != nil {
 					return err
 				}
@@ -243,6 +288,9 @@ func run(c serial.Config) error {
 				}
 			}
 		case <-chContextTest:
+			if time.Since(lastErrATcommand) < 60*time.Second {
+				break
+			}
 			if err := func() error {
 				p, err := serial.OpenPort(&c)
 				if err != nil {
@@ -262,6 +310,7 @@ func run(c serial.Config) error {
 				fmt.Println(err)
 				if errors.Is(err, ErrorAT) ||
 					errors.As(err, &patErr) {
+					lastErrATcommand = time.Now()
 					countError++
 					/** if countError <= MaxError/2 {
 						time.Sleep(3 * time.Second)
@@ -303,7 +352,7 @@ func run(c serial.Config) error {
 				return fmt.Errorf("gpio reset error: %s", err)
 			}
 		case <-chGpioPower:
-			if time.Since(lastReset) < 120*time.Second {
+			if time.Since(lastReset) < 300*time.Second {
 				break
 			}
 			lastReset = time.Now()
